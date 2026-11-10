@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E4E8C" />
+      <stop offset="100%" stop-color="#0E2E5C" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E8A33D" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+    <linearGradient id="turqGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A9E9A" />
+      <stop offset="100%" stop-color="#0D6B68" />
+    </linearGradient>
+  </defs>
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="112" fill="url(#primaryGrad)" />
+  
+  <!-- Subtle circular accent halo -->
+  <circle cx="256" cy="230" r="150" fill="none" stroke="url(#turqGrad)" stroke-width="8" opacity="0.4" stroke-dasharray="12 12" />
+  
+  <!-- Stylized Open Book / Wings of Knowledge -->
+  <path d="M256 340 C210 320 150 310 96 324 L96 210 C150 196 210 206 256 226 C302 206 362 196 416 210 L416 324 C362 310 302 320 256 340 Z" fill="#FFFFFF" opacity="0.95" />
+  <path d="M256 226 L256 340" stroke="#1E4E8C" stroke-width="6" stroke-linecap="round" />
+  
+  <!-- Center Flame / Torch of Culture & Youth Enthusiasm -->
+  <path d="M256 120 C276 150 290 176 280 204 C272 226 256 230 256 230 C256 230 240 226 232 204 C222 176 236 150 256 120 Z" fill="url(#accentGrad)" />
+  <path d="M256 154 C266 172 272 188 266 204 C262 216 256 220 256 220 C256 220 250 216 246 204 C240 188 246 172 256 154 Z" fill="#FEF08A" />
+
+  <!-- Radiance Dots (representing youth diversity) -->
+  <circle cx="180" cy="150" r="10" fill="url(#accentGrad)" />
+  <circle cx="332" cy="150" r="10" fill="url(#accentGrad)" />
+  <circle cx="256" cy="94" r="8" fill="#FEF08A" />
+
+  <!-- Arabic Typography / Emblem Ribbon -->
+  <path d="M128 390 Q256 420 384 390 L394 424 Q256 454 118 424 Z" fill="url(#turqGrad)" />
+  <circle cx="256" cy="410" r="6" fill="#FFFFFF" />
+</svg>
