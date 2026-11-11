@@ -19,6 +19,7 @@ import {
   Coins,
   FolderKanban,
 } from 'lucide-react';
+import { MonthlyPerformanceReport } from '../../components/director/MonthlyPerformanceReport';
 
 export const DirectorDashboard: React.FC = () => {
   const {
@@ -225,6 +226,9 @@ export const DirectorDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Visual Monthly Performance Report with Recharts */}
+      <MonthlyPerformanceReport />
 
       {/* Main Grid: Active Offerings & Recent Audit Stream */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
