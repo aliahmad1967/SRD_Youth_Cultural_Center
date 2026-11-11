@@ -29,6 +29,7 @@ import {
   AlertCircle,
   Briefcase,
   Sparkles,
+  Archive,
 } from 'lucide-react';
 
 type HRTab = 'all' | 'trainers' | 'volunteers' | 'members' | 'guardians' | 'staff';
@@ -40,6 +41,7 @@ export const HRManagementView: React.FC = () => {
     activeRole,
     switchUser,
     openAddMember,
+    openArchiveModal,
     navigate,
     showToast,
     formatMoney,
@@ -257,6 +259,16 @@ export const HRManagementView: React.FC = () => {
           >
             <HeartHandshake className="w-3.5 h-3.5" />
             <span>+ متطوع جديد</span>
+          </button>
+
+          {/* Archive Vault */}
+          <button
+            onClick={openArchiveModal}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold transition shadow-xs"
+            title="فتح قسم الأرشيف المركزي"
+          >
+            <Archive className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+            <span>قسم الأرشيف</span>
           </button>
 
           {/* Export */}

@@ -18,6 +18,7 @@ import {
   Moon,
   Sun,
   Coins,
+  HelpCircle,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -34,6 +35,7 @@ export const Navbar: React.FC = () => {
     currency,
     setCurrency,
     openSettings,
+    openUserGuide,
   } = useApp();
 
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -180,6 +182,16 @@ export const Navbar: React.FC = () => {
             title="إعدادات التطبيق الشاملة (العملة، المود الليلي، بيانات المركز)"
           >
             <Settings className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+          </button>
+
+          {/* User Guide & Help Button */}
+          <button
+            onClick={openUserGuide}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border border-amber-300/80 dark:border-amber-800 text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-900 transition shadow-2xs"
+            title="دليل المستخدم والمساعدة (خطوات مبسطة باللغة العربية)"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            <span className="hidden sm:inline">دليل الاستخدام</span>
           </button>
 
           <PWAInstallButton compact />

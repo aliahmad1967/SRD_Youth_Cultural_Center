@@ -83,6 +83,28 @@ interface AppContextType {
   openAssignTrainer: (data: AssignTrainerData) => void;
   closeAssignTrainer: () => void;
 
+  isBackupModalOpen: boolean;
+  openBackupModal: () => void;
+  closeBackupModal: () => void;
+
+  // Archive Manager
+  isArchiveModalOpen: boolean;
+  openArchiveModal: () => void;
+  closeArchiveModal: () => void;
+  archiveMember: (memberId: string, reason?: string) => void;
+  restoreMember: (memberId: string) => void;
+  archiveOffering: (offeringId: string, reason?: string) => void;
+  restoreOffering: (offeringId: string) => void;
+  archiveCourse: (courseId: string, reason?: string) => void;
+  restoreCourse: (courseId: string) => void;
+  batchArchiveCompletedCourses: () => void;
+  batchArchiveGraduatedMembers: () => void;
+
+  // User Guide Modal (دليل المستخدم)
+  isUserGuideOpen: boolean;
+  openUserGuide: () => void;
+  closeUserGuide: () => void;
+
   // Actions
   switchUser: (userId: string, roleOverride?: UserRole) => void;
   switchRole: (role: UserRole) => void;
@@ -115,6 +137,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [isAssignTrainerOpen, setIsAssignTrainerOpen] = useState(false);
   const [assignTrainerData, setAssignTrainerData] = useState<AssignTrainerData | null>(null);
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+  const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+  const [isUserGuideOpen, setIsUserGuideOpen] = useState(false);
 
   // Selection states
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -341,6 +366,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAssignTrainerData(null);
   };
 
+  const openBackupModal = () => setIsBackupModalOpen(true);
+  const closeBackupModal = () => setIsBackupModalOpen(false);
+
+  const openArchiveModal = () => setIsArchiveModalOpen(true);
+  const closeArchiveModal = () => setIsArchiveModalOpen(false);
+
+  const archiveMember = (memberId: string, reason?: string) => {
+    const performer = currentUser ? { id: currentUser.id, name: currentUser.name } : { id: 'admin', name: 'المدير' };
+    const success = db.archiveMember(memberId, performer, reason);
+    if (success) {
+      showToast('تم نقل سجل المنتسب إلى قسم الأرشيف بنجاح.', 'success');
+    }
+  };
+
+  const restoreMember = (memberId: string) => {
+    const performer = currentUser ? { id: currentUser.id, name: currentUser.name } : { id: 'admin', name: 'المدير' };
+    const success = db.restoreMember(memberId, performer);
+    if (success) {
+      showToast('تمت استعادة المنتسب من الأرشيف وإعادته إلى الجداول النشطة بنجاح.', 'success');
+    }
+  };
+
+  const archiveOffering = (offeringId: string, reason?: string) => {
+    const performer = currentUser ? { id: currentUser.id, name: currentUser.name } : { id: 'admin', name: 'المدير' };
+    const success = db.archiveOffering(offeringId, performer, reason);
+    if (success) {
+      showToast('تمت أرشفة دفعة الدورة بنجاح ونقلها من الجداول النشطة.', 'success');
+    }
+  };
+
+  const restoreOffering = (offeringId: string) => {
+    const performer = currentUser ? { id: currentUser.id, name: currentUser.name } : { id: 'admin', name: 'المدير' };
+    const success = db.restoreOffering(offeringId, performer);
+    if (success) {
+      showToast('تمت استعادة دفعة الدورة إلى الجداول النشطة بنجاح.', 'success');
+    }
+  };
+
+  const archiveCourse = (courseId: string, reason?: string) => {
+    const performer = currentUser ? { id: currentUser.id, name: currentUser.name } : { id: 'admin', name: 'المدير' };
+    const success = db.archiveCourse(courseId, performer, reason);
+    if (success) {
+      showToast('تمت أرشفة البرنامج التدريبي ودفعاته بنجاح.', 'success');
+    }
+  };
+
+  const restoreCourse = (courseId: string) => {
+    const performer = currentUser ? { id: currentUser.id, name: currentUser.name } : { id: 'admin', name: 'المدير' };
+    const success = db.restoreCourse(courseId, performer);
+    if (success) {
+      showToast('تمت استعادة البرنامج التدريبي إلى الكتالوج النشط بنجاح.', 'success');
+    }
+  };
+
+  const batchArchiveCompletedCourses = () => {
+    const performer = currentUser ? { id: currentUser.id, name: currentUser.name } : { id: 'admin', name: 'المدير' };
+    const res = db.batchArchiveCompletedCourses(performer);
+    if (res.count > 0) {
+      showToast(`تمت أرشفة ${res.count} دورات ودفعات منتهية بنجاح لتخفيف الازدحام.`, 'success');
+    } else {
+      showToast('لا توجد دورات منتهية جديدة بحاجة إلى أرشفة.', 'info');
+    }
+  };
+
+  const batchArchiveGraduatedMembers = () => {
+    const performer = currentUser ? { id: currentUser.id, name: currentUser.name } : { id: 'admin', name: 'المدير' };
+    const res = db.batchArchiveGraduatedMembers(performer);
+    if (res.count > 0) {
+      showToast(`تمت أرشفة ${res.count} من المنتسبين الخريجين والمنسحبين لتنظيم السجلات.`, 'success');
+    } else {
+      showToast('لا توجد سجلات أعضاء خريجين أو منسحبين غير مؤرشفة حالياً.', 'info');
+    }
+  };
+
+  const openUserGuide = () => setIsUserGuideOpen(true);
+  const closeUserGuide = () => setIsUserGuideOpen(false);
+
   const logout = () => {
     setCurrentUser(null);
     setActiveRole('guest');
@@ -386,6 +488,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         assignTrainerData,
         openAssignTrainer,
         closeAssignTrainer,
+
+        isBackupModalOpen,
+        openBackupModal,
+        closeBackupModal,
+
+        isArchiveModalOpen,
+        openArchiveModal,
+        closeArchiveModal,
+        archiveMember,
+        restoreMember,
+        archiveOffering,
+        restoreOffering,
+        archiveCourse,
+        restoreCourse,
+        batchArchiveCompletedCourses,
+        batchArchiveGraduatedMembers,
+
+        isUserGuideOpen,
+        openUserGuide,
+        closeUserGuide,
 
         switchUser,
         switchRole,

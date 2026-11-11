@@ -80,6 +80,9 @@ export interface Member {
   guardianId?: string;
   photoUrl?: string;
   totalHoursAttended?: number;
+  isArchived?: boolean;
+  archivedAt?: string;
+  archiveReason?: string;
 }
 
 export interface Guardian {
@@ -193,6 +196,9 @@ export interface Course {
     minExamScore: number;
   };
   image?: string;
+  isArchived?: boolean;
+  archivedAt?: string;
+  archiveReason?: string;
 }
 
 export interface CourseOffering {
@@ -209,6 +215,9 @@ export interface CourseOffering {
   waitlistCount: number;
   status: 'draft' | 'open' | 'closed' | 'in_progress' | 'completed' | 'archived';
   scheduleSummary: string;
+  isArchived?: boolean;
+  archivedAt?: string;
+  archiveReason?: string;
 }
 
 export interface Session {

@@ -7,6 +7,9 @@ import { ToastContainer } from './components/common/ToastContainer';
 import { SettingsModal } from './components/common/SettingsModal';
 import { AddMemberModal } from './components/common/AddMemberModal';
 import { AssignTrainerModal } from './components/common/AssignTrainerModal';
+import { BackupRestoreModal } from './components/director/BackupRestoreModal';
+import { ArchiveCenterModal } from './components/director/ArchiveCenterModal';
+import { UserGuideModal } from './components/common/UserGuideModal';
 
 // Views
 import { DirectorDashboard } from './views/director/DirectorDashboard';
@@ -35,7 +38,7 @@ import { PublicVerifyCertView } from './views/auth/PublicVerifyCertView';
 import { BookOpen, ShieldCheck, WifiOff, Heart } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  const { currentView, isOnline, navigate } = useApp();
+  const { currentView, isOnline, navigate, openUserGuide } = useApp();
 
   const renderCurrentView = () => {
     switch (currentView) {
@@ -144,6 +147,13 @@ const AppContent: React.FC = () => {
             >
               الخادم وقاعدة البيانات المحلية (Section 17)
             </button>
+            <span>·</span>
+            <button
+              onClick={openUserGuide}
+              className="text-amber-600 dark:text-amber-400 font-bold hover:underline transition"
+            >
+              دليل المستخدم (خطوات مبسطة) 📖
+            </button>
           </div>
 
           <div className="text-[10px] text-slate-400">
@@ -165,6 +175,9 @@ const AppContent: React.FC = () => {
       <SettingsModal />
       <AddMemberModal />
       <AssignTrainerModal />
+      <BackupRestoreModal />
+      <ArchiveCenterModal />
+      <UserGuideModal />
       <ToastContainer />
     </div>
   );

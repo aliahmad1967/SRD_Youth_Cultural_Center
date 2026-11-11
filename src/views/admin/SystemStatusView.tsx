@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 export const SystemStatusView: React.FC = () => {
-  const { dbState, showToast } = useApp();
+  const { dbState, showToast, openBackupModal } = useApp();
   const [auditSearch, setAuditSearch] = useState('');
 
   const filteredLogs = dbState.auditLogs.filter(
@@ -60,20 +60,27 @@ export const SystemStatusView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={openBackupModal}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition shadow-xs"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-200" />
+            <span>إدارة النسخ الاحتياطي والاستيراد (JSON)</span>
+          </button>
           <button
             onClick={handleExportBackup}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1E4E8C] text-white text-xs font-bold hover:bg-[#163a69] transition shadow-xs"
           >
             <Download className="w-3.5 h-3.5 text-amber-300" />
-            <span>أخذ نسخة احتياطية فورية (DB-13)</span>
+            <span>تحميل فوري (DB-13)</span>
           </button>
           <button
             onClick={handleResetData}
             className="flex items-center gap-1 px-3 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition"
           >
             <RotateCcw className="w-3 h-3 text-slate-400" />
-            <span>إعادة ضبط البيانات</span>
+            <span>إعادة ضبط</span>
           </button>
         </div>
       </div>

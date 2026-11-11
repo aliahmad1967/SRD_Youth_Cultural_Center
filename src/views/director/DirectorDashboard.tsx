@@ -18,6 +18,9 @@ import {
   Settings,
   Coins,
   FolderKanban,
+  Database,
+  Archive,
+  HelpCircle,
 } from 'lucide-react';
 import { MonthlyPerformanceReport } from '../../components/director/MonthlyPerformanceReport';
 
@@ -28,12 +31,19 @@ export const DirectorDashboard: React.FC = () => {
     openAddMember,
     openSettings,
     openAssignTrainer,
+    openBackupModal,
+    openArchiveModal,
+    openUserGuide,
+    batchArchiveCompletedCourses,
     formatMoney,
   } = useApp();
 
   const totalMembers = dbState.members.length;
-  const newEnrollees = dbState.members.filter((m) => m.status === 'new_enrollee').length;
-  const activeMembers = dbState.members.filter((m) => m.status === 'active').length;
+  const archivedMembers = dbState.members.filter((m) => m.isArchived);
+  const activeMembers = dbState.members.filter((m) => !m.isArchived && m.status === 'active').length;
+  const newEnrollees = dbState.members.filter((m) => !m.isArchived && m.status === 'new_enrollee').length;
+  const archivedOfferings = dbState.offerings.filter((o) => o.isArchived || o.status === 'archived');
+  const totalArchivedCount = archivedMembers.length + archivedOfferings.length;
   const activeVolunteers = dbState.volunteers.filter((v) => v.status === 'active').length;
   const totalVolunteerHours = dbState.volunteers.reduce((sum, v) => sum + v.approvedHours, 0);
 
@@ -116,6 +126,36 @@ export const DirectorDashboard: React.FC = () => {
             >
               <Settings className="w-4 h-4" />
               <span>إعدادات العملة والمظهر</span>
+            </button>
+
+            {/* Action 5: Backup & Disaster Recovery (JSON) */}
+            <button
+              onClick={openBackupModal}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 font-bold text-xs backdrop-blur-xs transition shadow-xs"
+              title="تصدير واستيراد قاعدة البيانات المحلية (JSON)"
+            >
+              <Database className="w-4 h-4 text-amber-300" />
+              <span>نسخ احتياطي واستيراد (JSON)</span>
+            </button>
+
+            {/* Action 6: Central Archive */}
+            <button
+              onClick={openArchiveModal}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-400/40 font-bold text-xs backdrop-blur-xs transition shadow-xs"
+              title="قسم الأرشيف: حفظ واسترجاع سجلات المنتسبين والدورات المنتهية"
+            >
+              <Archive className="w-4 h-4 text-purple-300" />
+              <span>قسم الأرشيف ({totalArchivedCount})</span>
+            </button>
+
+            {/* Action 7: Simple User Guide */}
+            <button
+              onClick={openUserGuide}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-300/40 font-bold text-xs backdrop-blur-xs transition shadow-xs"
+              title="دليل المستخدم والمساعدة (خطوات مبسطة)"
+            >
+              <HelpCircle className="w-4 h-4 text-amber-300" />
+              <span>دليل الاستخدام المبسط 📖</span>
             </button>
           </div>
         </div>
@@ -304,6 +344,71 @@ export const DirectorDashboard: React.FC = () => {
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Archive Center Widget (Section for Archiving Members & Courses) */}
+          <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-[#1E4E8C] text-white p-6 shadow-md border border-slate-700 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-400/20 text-amber-300 border border-amber-400/30 flex items-center justify-center">
+                  <Archive className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white flex items-center gap-2">
+                    <span>قسم الأرشيف المركزي (حفظ السجلات القديمة)</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-bold">
+                      تنظيم الجداول النشطة
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-300 mt-0.5">
+                    نقل سجلات المنتسبين والدورات التدريبية المنتهية للأرشيف لتقليل الازدحام مع الحفاظ عليها للرجوع إليها لاحقاً.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={openArchiveModal}
+                  className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs transition shadow-xs flex items-center gap-1.5"
+                >
+                  <Archive className="w-3.5 h-3.5" />
+                  <span>فتح قسم الأرشيف ({totalArchivedCount})</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-3 rounded-xl bg-white/10 backdrop-blur-xs border border-white/10">
+                <span className="text-[11px] text-slate-300 block">سجلات المنتسبين المؤرشفة:</span>
+                <span className="text-lg font-black text-amber-300 tabular-nums">
+                  {archivedMembers.length}{' '}
+                  <span className="text-xs font-normal text-slate-300">سجل</span>
+                </span>
+                <p className="text-[10px] text-slate-300 mt-0.5">خريجون، منسحبون، أو مكتملو التأهيل</p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white/10 backdrop-blur-xs border border-white/10">
+                <span className="text-[11px] text-slate-300 block">الدورات والدفعات المؤرشفة:</span>
+                <span className="text-lg font-black text-teal-300 tabular-nums">
+                  {archivedOfferings.length}{' '}
+                  <span className="text-xs font-normal text-slate-300">دفعة</span>
+                </span>
+                <p className="text-[10px] text-slate-300 mt-0.5">دورات انتهت جلساتها بنجاح</p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-white/10 backdrop-blur-xs border border-white/10 flex flex-col justify-between">
+                <div>
+                  <span className="text-[11px] text-slate-300 block">إجراء أرشفة سريع:</span>
+                  <span className="text-xs font-bold text-emerald-300">حماية البيانات محلياً</span>
+                </div>
+                <button
+                  onClick={batchArchiveCompletedCourses}
+                  className="mt-2 w-full py-1.5 px-2.5 rounded-lg bg-white/15 hover:bg-white/25 text-white font-bold text-[11px] transition text-center"
+                >
+                  أرشفة الدورات المنتهية الآن ⚡
+                </button>
+              </div>
             </div>
           </div>
 

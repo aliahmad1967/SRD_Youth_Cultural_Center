@@ -20,18 +20,25 @@ import {
   Shield,
   Award,
   UserPlus,
+  Archive,
+  RotateCcw,
 } from 'lucide-react';
 
 export const MembersManagementView: React.FC = () => {
-  const { dbState, currentUser, showToast, openAddMember } = useApp();
+  const { dbState, currentUser, showToast, openAddMember, openArchiveModal, archiveMember, restoreMember } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | MemberStatus | 'minor'>('all');
+  const [showArchived, setShowArchived] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [showCardModal, setShowCardModal] = useState(false);
   const [cardMember, setCardMember] = useState<Member | null>(null);
 
-  // Filter members
+  // Filter members (respecting archive state to prevent table clutter)
   const filteredMembers = dbState.members.filter((m) => {
+    // Hide archived by default to eliminate clutter
+    if (!showArchived && m.isArchived) return false;
+    if (showArchived && !m.isArchived) return false;
+
     const matchesSearch =
       m.name.includes(searchTerm) ||
       m.membershipNo.includes(searchTerm) ||
@@ -122,6 +129,15 @@ export const MembersManagementView: React.FC = () => {
           </button>
 
           <button
+            onClick={openArchiveModal}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold transition shadow-xs"
+            title="فتح قسم الأرشيف واستعراض السجلات القديمة"
+          >
+            <Archive className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+            <span>قسم الأرشيف ({dbState.members.filter((m) => m.isArchived).length})</span>
+          </button>
+
+          <button
             onClick={handleExportCSV}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition shadow-xs"
           >
@@ -133,8 +149,21 @@ export const MembersManagementView: React.FC = () => {
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-        {/* Segmented status filter */}
-        <div className="flex items-center gap-1 p-1 bg-slate-200/70 rounded-xl overflow-x-auto scrollbar-none">
+        {/* Segmented status filter + Archived Toggle */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            onClick={() => setShowArchived(!showArchived)}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition shrink-0 flex items-center gap-1.5 ${
+              showArchived
+                ? 'bg-purple-600 text-white shadow-xs'
+                : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <Archive className="w-3.5 h-3.5" />
+            <span>{showArchived ? 'عرض السجلات النشطة فقط' : `عرض المؤرشفين (${dbState.members.filter((m) => m.isArchived).length})`}</span>
+          </button>
+
+          <div className="flex items-center gap-1 p-1 bg-slate-200/70 rounded-xl overflow-x-auto scrollbar-none">
           <button
             onClick={() => setStatusFilter('all')}
             className={`px-3 py-1.5 text-xs font-bold rounded-lg transition shrink-0 ${
@@ -176,6 +205,7 @@ export const MembersManagementView: React.FC = () => {
             موقوف ({dbState.members.filter((m) => m.status === 'suspended').length})
           </button>
         </div>
+      </div>
 
         {/* Search */}
         <div className="relative w-full md:w-72">
@@ -244,17 +274,45 @@ export const MembersManagementView: React.FC = () => {
                         {m.totalHoursAttended || 0} ساعة
                       </td>
                       <td className="p-3.5 text-center">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCardMember(m);
-                            setShowCardModal(true);
-                          }}
-                          className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-[#1E4E8C] text-[11px] font-bold transition shadow-2xs inline-flex items-center gap-1"
-                        >
-                          <CreditCard className="w-3 h-3" />
-                          <span>البطاقة</span>
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCardMember(m);
+                              setShowCardModal(true);
+                            }}
+                            className="px-2 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-[#1E4E8C] text-[11px] font-bold transition shadow-2xs inline-flex items-center gap-1"
+                          >
+                            <CreditCard className="w-3 h-3" />
+                            <span>البطاقة</span>
+                          </button>
+
+                          {m.isArchived ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                restoreMember(m.id);
+                              }}
+                              className="px-2 py-1 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[11px] font-bold transition shadow-2xs inline-flex items-center gap-1"
+                              title="استعادة من الأرشيف"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              <span>استعادة</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                archiveMember(m.id, 'أرشفة من جدول المنتسبين لتخفيف الازدحام');
+                              }}
+                              className="px-2 py-1 rounded-lg border border-slate-200 bg-white hover:bg-amber-50 hover:text-amber-700 text-slate-500 text-[11px] font-bold transition shadow-2xs inline-flex items-center gap-1"
+                              title="نقل السجل إلى قسم الأرشيف"
+                            >
+                              <Archive className="w-3 h-3" />
+                              <span>أرشفة</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

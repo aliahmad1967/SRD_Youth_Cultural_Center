@@ -1255,6 +1255,318 @@ class LocalDatabase {
     this.saveState();
     return newVolunteer;
   }
+
+  // --- Archiving Engine (الأرشيف المركزي للمنتسبين والدورات المنتهية) ---
+  public archiveMember(
+    memberId: string,
+    performer: { id: string; name: string },
+    reason: string = 'أرشفة إدارية دورية'
+  ): boolean {
+    const member = this.state.members.find((m) => m.id === memberId);
+    if (!member) return false;
+
+    member.isArchived = true;
+    member.archivedAt = new Date().toISOString().replace('T', ' ').substring(0, 16);
+    member.archiveReason = reason;
+
+    this.logAudit(
+      performer,
+      'أرشفة سجل منتسب',
+      'Member',
+      memberId,
+      `نقل المنتسب (${member.name} - ${member.membershipNo}) إلى الأرشيف. السبب: ${reason}`
+    );
+    this.saveState();
+    return true;
+  }
+
+  public restoreMember(
+    memberId: string,
+    performer: { id: string; name: string }
+  ): boolean {
+    const member = this.state.members.find((m) => m.id === memberId);
+    if (!member) return false;
+
+    member.isArchived = false;
+    const oldReason = member.archiveReason;
+    member.archiveReason = undefined;
+
+    this.logAudit(
+      performer,
+      'استعادة منتسب من الأرشيف',
+      'Member',
+      memberId,
+      `استعادة المنتسب (${member.name} - ${member.membershipNo}) إلى الجداول النشطة (كان مؤرشفاً بسبب: ${oldReason || 'غير محدد'})`
+    );
+    this.saveState();
+    return true;
+  }
+
+  public archiveOffering(
+    offeringId: string,
+    performer: { id: string; name: string },
+    reason: string = 'انتهاء فترة الدورة واكتمال الدفعة'
+  ): boolean {
+    const offering = this.state.offerings.find((o) => o.id === offeringId);
+    if (!offering) return false;
+
+    offering.isArchived = true;
+    offering.status = 'archived';
+    offering.archivedAt = new Date().toISOString().replace('T', ' ').substring(0, 16);
+    offering.archiveReason = reason;
+
+    this.logAudit(
+      performer,
+      'أرشفة دفعة دورة تدريبية',
+      'CourseOffering',
+      offeringId,
+      `نقل دفعة الدورة (${offering.name}) إلى الأرشيف. السبب: ${reason}`
+    );
+    this.saveState();
+    return true;
+  }
+
+  public restoreOffering(
+    offeringId: string,
+    performer: { id: string; name: string }
+  ): boolean {
+    const offering = this.state.offerings.find((o) => o.id === offeringId);
+    if (!offering) return false;
+
+    offering.isArchived = false;
+    offering.status = 'completed';
+    offering.archiveReason = undefined;
+
+    this.logAudit(
+      performer,
+      'استعادة دفعة دورة من الأرشيف',
+      'CourseOffering',
+      offeringId,
+      `استعادة دفعة الدورة (${offering.name}) إلى السجلات المكتملة النشطة.`
+    );
+    this.saveState();
+    return true;
+  }
+
+  public archiveCourse(
+    courseId: string,
+    performer: { id: string; name: string },
+    reason: string = 'أرشفة البرنامج التدريبي'
+  ): boolean {
+    const course = this.state.courses.find((c) => c.id === courseId);
+    if (!course) return false;
+
+    course.isArchived = true;
+    course.archivedAt = new Date().toISOString().replace('T', ' ').substring(0, 16);
+    course.archiveReason = reason;
+
+    // Also archive linked offerings
+    this.state.offerings
+      .filter((o) => o.courseId === courseId)
+      .forEach((o) => {
+        o.isArchived = true;
+        o.status = 'archived';
+        o.archivedAt = course.archivedAt;
+        o.archiveReason = reason;
+      });
+
+    this.logAudit(
+      performer,
+      'أرشفة برنامج تدريبي ودفعاته',
+      'Course',
+      courseId,
+      `أرشفة البرنامج التدريبي (${course.title}) وكافة دفعاته المرتبطة.`
+    );
+    this.saveState();
+    return true;
+  }
+
+  public restoreCourse(
+    courseId: string,
+    performer: { id: string; name: string }
+  ): boolean {
+    const course = this.state.courses.find((c) => c.id === courseId);
+    if (!course) return false;
+
+    course.isArchived = false;
+    course.archiveReason = undefined;
+
+    this.state.offerings
+      .filter((o) => o.courseId === courseId && o.isArchived)
+      .forEach((o) => {
+        o.isArchived = false;
+        o.status = 'completed';
+        o.archiveReason = undefined;
+      });
+
+    this.logAudit(
+      performer,
+      'استعادة برنامج تدريبي من الأرشيف',
+      'Course',
+      courseId,
+      `استعادة البرنامج التدريبي (${course.title}) ودفعاته إلى الكتالوج النشط.`
+    );
+    this.saveState();
+    return true;
+  }
+
+  public batchArchiveCompletedCourses(
+    performer: { id: string; name: string }
+  ): { count: number } {
+    let count = 0;
+    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+    this.state.offerings.forEach((off) => {
+      if ((off.status === 'completed' || off.status === 'closed') && !off.isArchived) {
+        off.isArchived = true;
+        off.status = 'archived';
+        off.archivedAt = nowStr;
+        off.archiveReason = 'أرشفة تلقائية للدفعات المنتهية';
+        count++;
+      }
+    });
+
+    if (count > 0) {
+      this.logAudit(
+        performer,
+        'أرشفة جماعية للدورات المنتهية',
+        'CourseOffering',
+        'batch',
+        `تمت أرشفة ${count} دورات ودفعات منتهية لتخفيف الازدحام في الجداول النشطة.`
+      );
+      this.saveState();
+    }
+
+    return { count };
+  }
+
+  public batchArchiveGraduatedMembers(
+    performer: { id: string; name: string }
+  ): { count: number } {
+    let count = 0;
+    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+    this.state.members.forEach((mem) => {
+      if ((mem.status === 'graduated' || mem.status === 'withdrawn') && !mem.isArchived) {
+        mem.isArchived = true;
+        mem.archivedAt = nowStr;
+        mem.archiveReason = mem.status === 'graduated' ? 'أرشفة تلقائية للمنتسبين الخريجين' : 'أرشفة تلقائية للمنتسبين المنسحبين';
+        count++;
+      }
+    });
+
+    if (count > 0) {
+      this.logAudit(
+        performer,
+        'أرشفة جماعية للمنتسبين القدامى',
+        'Member',
+        'batch',
+        `تمت أرشفة ${count} منتسب من الخريجين والمنسحبين لتنظيم السجلات النشطة.`
+      );
+      this.saveState();
+    }
+
+    return { count };
+  }
+
+  // --- Database Backup & Restore (JSON Export / Import - Section 17) ---
+  public exportDatabaseToJson(): string {
+    this.state.lastBackupAt = new Date().toISOString();
+    this.saveState();
+    return JSON.stringify(this.state, null, 2);
+  }
+
+  public importDatabaseFromJson(
+    jsonContent: string,
+    performer: { id: string; name: string }
+  ): { success: boolean; message: string; recordCounts?: Record<string, number> } {
+    try {
+      const parsed = JSON.parse(jsonContent);
+
+      if (!parsed || typeof parsed !== 'object') {
+        throw new Error('الملف ليس بتنسيق JSON صحيح أو فارغ.');
+      }
+
+      if (!Array.isArray(parsed.users) || !Array.isArray(parsed.members) || !Array.isArray(parsed.courses)) {
+        throw new Error('الملف غير مطابق لهيكل قاعدة بيانات المركز (مجموعات المستخدمين، المنتسبين، أو الدورات غير موجودة).');
+      }
+
+      // Emergency snapshot before overwriting
+      try {
+        const emergencyKey = `rawad_emergency_backup_${Date.now()}`;
+        localStorage.setItem(emergencyKey, JSON.stringify(this.state));
+      } catch (backupErr) {
+        console.warn('Could not save emergency snapshot to localStorage', backupErr);
+      }
+
+      const newState: DatabaseState = {
+        settings: parsed.settings || this.state.settings,
+        users: parsed.users,
+        guardians: Array.isArray(parsed.guardians) ? parsed.guardians : [],
+        members: parsed.members,
+        onboardingItems: Array.isArray(parsed.onboardingItems) ? parsed.onboardingItems : [],
+        volunteers: Array.isArray(parsed.volunteers) ? parsed.volunteers : [],
+        opportunities: Array.isArray(parsed.opportunities) ? parsed.opportunities : [],
+        shifts: Array.isArray(parsed.shifts) ? parsed.shifts : [],
+        courses: parsed.courses,
+        offerings: Array.isArray(parsed.offerings) ? parsed.offerings : [],
+        sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
+        enrollments: Array.isArray(parsed.enrollments) ? parsed.enrollments : [],
+        attendanceRecords: Array.isArray(parsed.attendanceRecords) ? parsed.attendanceRecords : [],
+        materials: Array.isArray(parsed.materials) ? parsed.materials : [],
+        events: Array.isArray(parsed.events) ? parsed.events : [],
+        questions: Array.isArray(parsed.questions) ? parsed.questions : [],
+        exams: Array.isArray(parsed.exams) ? parsed.exams : [],
+        examAttempts: Array.isArray(parsed.examAttempts) ? parsed.examAttempts : [],
+        evaluations: Array.isArray(parsed.evaluations) ? parsed.evaluations : [],
+        certificates: Array.isArray(parsed.certificates) ? parsed.certificates : [],
+        cashAccounts: Array.isArray(parsed.cashAccounts) ? parsed.cashAccounts : [],
+        finCategories: Array.isArray(parsed.finCategories) ? parsed.finCategories : [],
+        memberCharges: Array.isArray(parsed.memberCharges) ? parsed.memberCharges : [],
+        paymentReceipts: Array.isArray(parsed.paymentReceipts) ? parsed.paymentReceipts : [],
+        donors: Array.isArray(parsed.donors) ? parsed.donors : [],
+        donations: Array.isArray(parsed.donations) ? parsed.donations : [],
+        expenses: Array.isArray(parsed.expenses) ? parsed.expenses : [],
+        budgets: Array.isArray(parsed.budgets) ? parsed.budgets : [],
+        transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
+        applications: Array.isArray(parsed.applications) ? parsed.applications : [],
+        notifications: Array.isArray(parsed.notifications) ? parsed.notifications : [],
+        announcements: Array.isArray(parsed.announcements) ? parsed.announcements : [],
+        auditLogs: Array.isArray(parsed.auditLogs) ? parsed.auditLogs : [],
+        lastBackupAt: new Date().toISOString(),
+      };
+
+      this.state = newState;
+
+      this.logAudit(
+        performer,
+        'استيراد واستعادة قاعدة البيانات',
+        'Database',
+        'global',
+        `تم استيراد قاعدة بيانات كاملة تحتوي على ${newState.members.length} منتسب، ${newState.courses.length} دورة، و ${newState.volunteers.length} متطوع.`
+      );
+
+      this.saveState();
+
+      return {
+        success: true,
+        message: 'تم استيراد واستعادة قاعدة البيانات المحلية بنجاح!',
+        recordCounts: {
+          users: newState.users.length,
+          members: newState.members.length,
+          volunteers: newState.volunteers.length,
+          courses: newState.courses.length,
+          offerings: newState.offerings.length,
+          sessions: newState.sessions.length,
+          expenses: newState.expenses.length,
+          auditLogs: newState.auditLogs.length,
+        },
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        message: err.message || 'حدث خطأ أثناء معالجة ملف النسخة الاحتياطية.',
+      };
+    }
+  }
 }
 
 export const db = new LocalDatabase();
