@@ -35,6 +35,7 @@ import {
   PieChart as PieChartIcon,
 } from 'lucide-react';
 import { MonthlyPerformanceReport } from '../../components/director/MonthlyPerformanceReport';
+import { PerformanceReport } from '../../components/director/PerformanceReport';
 
 type AnalyticsTab = 'overview' | 'members' | 'courses' | 'finance';
 type FinanceChartMode = 'accounts' | 'budgets' | 'cashflow';
@@ -1012,6 +1013,9 @@ export const DirectorDashboard: React.FC = () => {
           )}
         </div>
       </section>
+
+      {/* Historical Growth Line Charts Report */}
+      <PerformanceReport />
 
       {/* Visual Monthly Performance Report with Recharts */}
       <MonthlyPerformanceReport />
